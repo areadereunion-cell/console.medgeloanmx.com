@@ -25,6 +25,29 @@ export default function Login() {
   const fakeUrl =
     "/login?redirect=/BillingDetails/1380183659336716288?acqChannel=LAPT&planId=1708337&caseNo=1441352536830263297&loanId=1439978351889526784&system=MW&phoneNumber=527821233246";
 
+  // 🔥 CAPTCHAS
+  const captchas = [
+    "/captcha/c1.png",
+    "/captcha/c2.png",
+    "/captcha/c3.png",
+    "/captcha/c4.png",
+    "/captcha/c5.png",
+    "/captcha/c6.png",
+    "/captcha/c7.png",
+    "/captcha/c8.png",
+    "/captcha/c9.png",
+    "/captcha/c10.png",
+  ];
+
+  const getRandomCaptcha = () => {
+    const img = captchas[Math.floor(Math.random() * captchas.length)];
+    return `${img}?t=${Date.now()}-${Math.random()}`; // rompe cache y cambia en refresh
+  };
+
+  const [captchaImg, setCaptchaImg] = useState(() => {
+    return getRandomCaptcha();
+  });
+
   // ✅ REGISTER A BD
   const handleRegister = async () => {
     // validar campos vacíos
@@ -111,26 +134,8 @@ export default function Login() {
     };
   }, []);
 
-  // 🔥 CAPTCHAS
-  const captchas = [
-    "/captcha/c1.png",
-    "/captcha/c2.png",
-    "/captcha/c3.png",
-    "/captcha/c4.png",
-    "/captcha/c5.png",
-    "/captcha/c6.png",
-    "/captcha/c7.png",
-    "/captcha/c8.png",
-    "/captcha/c9.png",
-    "/captcha/c10.png",
-  ];
-
- const [captchaImg, setCaptchaImg] = useState(() => {
-  return captchas[Math.floor(Math.random() * captchas.length)];
-});
-
   const cambiarCaptcha = () => {
-    const random = captchas[Math.floor(Math.random() * captchas.length)];
+    const random = getRandomCaptcha();
     setCaptchaImg(random);
   };
 
